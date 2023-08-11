@@ -1,104 +1,39 @@
 import express from "express";
-import fs from "fs";
+import ProductManager from "./ProductManager.js"
 
 const app = express();
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({extended:true}));
 
+const PM = new ProductManager;
 
-// creo la clase ProductManager
-class ProductManager {
-  
-    // creo el constructor.
-    constructor() {
-      this.path = "Products.json";
-      this.products = [];
-      this.createFile();
-    }
-    // inicializo el "Products.json" con un metodo createFile().
-    createFile() {
-      if (!fs.existsSync(this.path)) {
-        this.saveProductsInJSON();
-      }
-    }
+PM.addProduct("Lavarropas","Nuevo",10,"https:lavarropas.com",123,2);
+PM.addProduct("Cama","Cómoda",12,"https:cama.com",234,11);
+PM.addProduct("Vaso","Frágil",30,"https:vaso.com",345,3);
+PM.addProduct("Computadora","Inteligente",20,"https:computadora.com",456,9);
+PM.addProduct("Televisor","Grande",5,"https:televisor.com",567,4);
 
-    // creo addProduct.
-    addProduct(title, description, price, thumbnail, code, stock) {
-        const noDupCode = this.products.some((prod) => prod.code === code);
-        if (noDupCode) {
-          console.error(`¡Ha ocurrido un error! El producto de código: "${code}" ya existe`);
-        return;
-        }
-        // validación de los campos 
-        if (!title || !description || !price || !thumbnail || !code || stock === undefined) {
-            console.error("All fields are mandatory.");
-          return;
-        }
-        // creo el ID
-        let id = this.products.length + 1;
-        // construyo el producto y lo guardo
-        const newProduct = {id, title, description, price, thumbnail, code, stock};
-        this.products.push(newProduct);
-        this.saveProductsInJSON();
-    }
-
-    // creo getProducts()
-    getProducts() {
-        this.products = JSON.parse(fs.readFileSync(this.path, "utf-8"));
-        return this.products;
-    }
-
-    // creo getProductById()
-    getProductById(id) {
-        const products = this.getProducts();
-        return (
-            products.find((prod) => prod.id === id) || console.error("Hubo un error")
-        );
-    }
-
-    // creo deleteProduct()
-    deleteProduct(id) {
-        this.products = this.getProducts();
-        const product = this.getProductById(id);
-        if (!product) {
-          console.error(`¡El producto: ${id} no existe! Intente de nuevo.`);
-        } else {
-          this.products = this.products.filter((prod) => prod.id !== product.id);
-          this.saveProductsInJSON();
-          console.log(`El producto: ${product.id} ha sido eliminado`);
-        }
-    }
-
-    // creo updateProduct()
-    updateProduct(id, product) {
-        this.products = this.getProducts();
-        let position = this.products.findIndex((prod) => prod.id === id);
-    
-        if (position === -1) {
-          console.error(`¡El producto: ${id} no existe! Intente de nuevo.`);
-        } else {
-          this.products[position].title = product.title;
-          this.products[position].stock = product.stock;
-          this.products[position].price = product.price;
-          this.products[position].code = product.code;
-          this.products[position].description = product.description;
-          this.products[position].thumbnail = product.thumbnail;
-          this.saveProductsInJSON();
-          console.log("¡Producto actualizado!");
-        }
-      }
-
-    saveProductsInJSON() {
-        fs.writeFileSync(this.path, JSON.stringify(this.products));
-    }
-}
-
-//---------------------------------------------------------------------------------------------------
-
-app.get('/products', (req, res) => {
-
-    const elementos = fs.readFile(path, "utf-8");
-    res.send(elementos);
+app.get("/",(req, res)=>{
+    res.send("¡Bienvenidos a la tienda de productos!")
 });
 
-// lo exporto
-export default { ProductManager };
+app.get("/products",(req, res)=>{
+    let limit = req.query.limit;
+    const productos = PM.getProducts();
+
+    if(!limit){
+    res.send(productos);
+    }else{
+        productos.length = limit;
+        res.send(productos);
+    }
+});
+
+app.get("/products/:pid", (req, res) => {
+    let pid = req.params.pid;
+    const prodID = PM.getProductById(pid);
+    res.send(prodID);
+});
+
+app.listen(8080,()=>{
+    console.log("El servidor ya está arriba desde el puerto 8080");
+});
